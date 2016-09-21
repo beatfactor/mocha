@@ -1,8 +1,5 @@
-coverage.html
-lib-cov
 .DS_Store
 node_modules
-test-outputs
 *.sock
 testing
 _mocha.js
@@ -13,3 +10,8 @@ lib/browser/diff.js
 *.iml
 *.patch
 *.diff
+npm-debug.log*
+.envrc
+.karma/
+*.orig
+

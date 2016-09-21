@@ -1,150 +1,176 @@
-BROWSERIFY := node_modules/.bin/browserify
-ESLINT := node_modules/.bin/eslint
+BROWSERIFY := "node_modules/.bin/browserify"
+ESLINT := "node_modules/.bin/eslint"
+KARMA := "node_modules/.bin/karma"
+MOCHA := "bin/mocha"
 
 REPORTER ?= spec
 TM_BUNDLE = JavaScript\ mocha.tmbundle
 SRC = $(shell find lib -name "*.js" -type f | sort)
-SUPPORT = $(wildcard support/*.js)
+TESTS = $(shell find test -name "*.js" -type f | sort)
 
 all: mocha.js
 
-mocha.js: $(SRC) $(SUPPORT)
-	@$(BROWSERIFY) ./support/browser-entry \
+mocha.js: $(SRC) browser-entry.js
+	@printf "==> [Browser :: build]\n"
+	$(BROWSERIFY) ./browser-entry \
+		--plugin ./scripts/dedefine \
 		--ignore 'fs' \
 		--ignore 'glob' \
-		--ignore 'jade' \
 		--ignore 'path' \
-		--ignore 'supports-color' \
-		--exclude './lib-cov/mocha' > $@
+		--ignore 'supports-color' > $@
 
 clean:
+	@printf "==> [Clean]\n"
 	rm -f mocha.js
-	rm -rf test-outputs
-	rm -fr lib-cov
-	rm -f coverage.html
-
-test-cov: lib-cov
-	@COV=1 $(MAKE) test REPORTER=html-cov > coverage.html
-
-lib-cov:
-	@rm -fr ./$@
-	@jscoverage lib $@
 
 lint:
-	@$(ESLINT) --reset $(SRC)
+	@printf "==> [Test :: Lint]\n"
+	$(ESLINT) browser-entry.js index.js karma.conf.js bin/mocha bin/_mocha "lib/**/*.js" "scripts/**/*.js" test
 
-test: lint test-unit
+test-node: test-bdd test-tdd test-qunit test-exports test-unit test-integration test-jsapi test-compilers test-glob test-requires test-reporters test-only test-global-only
 
-test-all: lint test-bdd test-tdd test-qunit test-exports test-unit test-integration test-jsapi test-compilers test-glob test-requires test-reporters test-only
+test-browser: clean mocha.js test-browser-unit test-browser-bdd test-browser-qunit test-browser-tdd test-browser-exports
+
+test: lint test-node test-browser
+
+test-browser-unit:
+	@printf "==> [Test :: Browser]\n"
+	NODE_PATH=. $(KARMA) start
+
+test-browser-bdd:
+	@printf "==> [Test :: Browser :: BDD]\n"
+	MOCHA_UI=bdd $(MAKE) test-browser-unit
+
+test-browser-qunit:
+	@printf "==> [Test :: Browser :: QUnit]\n"
+	MOCHA_UI=qunit $(MAKE) test-browser-unit
+
+test-browser-tdd:
+	@printf "==> [Test :: Browser :: TDD]\n"
+	MOCHA_UI=tdd $(MAKE) test-browser-unit
 
 test-jsapi:
-	@node test/jsapi
+	@printf "==> [Test :: JS API]\n"
+	node test/jsapi
 
 test-unit:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Unit]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		test/acceptance/*.js \
 		--growl \
 		test/*.js
 
 test-integration:
-	@./bin/mocha \
+	@printf "==> [Test :: Integrations]\n"
+	$(MOCHA) --timeout 5000 \
 		--reporter $(REPORTER) \
 		test/integration/*.js
 
 test-compilers:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Compilers]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--compilers coffee:coffee-script/register,foo:./test/compiler/foo \
 		test/acceptance/test.coffee \
 		test/acceptance/test.foo
 
 test-requires:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Requires]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--compilers coffee:coffee-script/register \
 		--require test/acceptance/require/a.js \
 		--require test/acceptance/require/b.coffee \
 		--require test/acceptance/require/c.js \
 		--require test/acceptance/require/d.coffee \
-		test/acceptance/require/require.js
+		test/acceptance/require/require.spec.js
 
 test-bdd:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: BDD]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui bdd \
-		test/acceptance/interfaces/bdd
+		test/acceptance/interfaces/bdd.spec
 
 test-tdd:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: TDD]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui tdd \
-		test/acceptance/interfaces/tdd
+		test/acceptance/interfaces/tdd.spec
 
 test-qunit:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: QUnit]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui qunit \
-		test/acceptance/interfaces/qunit
+		test/acceptance/interfaces/qunit.spec
 
 test-exports:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Exports]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui exports \
-		test/acceptance/interfaces/exports
+		test/acceptance/interfaces/exports.spec
 
 test-glob:
-	@./test/acceptance/glob/glob.sh
+	@printf "==> [Test :: Glob]\n"
+	bash ./test/acceptance/glob/glob.sh
 
 test-reporters:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Reporters]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		test/reporters/*.js
 
 test-only:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Only]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui tdd \
-		test/acceptance/misc/only/tdd
+		test/acceptance/misc/only/tdd.spec
 
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui bdd \
-		test/acceptance/misc/only/bdd
+		test/acceptance/misc/only/bdd.spec
 
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	$(MOCHA) --reporter $(REPORTER) \
 		--ui qunit \
-		test/acceptance/misc/only/qunit
+		test/acceptance/misc/only/bdd-require.spec
+
+test-global-only:
+	@printf "==> [Test :: Global Only]\n"
+	$(MOCHA) --reporter $(REPORTER) \
+		--ui tdd \
+		test/acceptance/misc/only/global/tdd.spec
+
+	$(MOCHA) --reporter $(REPORTER) \
+		--ui bdd \
+		test/acceptance/misc/only/global/bdd.spec
+
+	$(MOCHA) --reporter $(REPORTER) \
+		--ui qunit \
+		test/acceptance/misc/only/global/qunit.spec
 
 test-mocha:
-	@./bin/mocha \
-		--reporter $(REPORTER) \
+	@printf "==> [Test :: Mocha]\n"
+	$(MOCHA) --reporter $(REPORTER) \
 		test/mocha
 
 non-tty:
-	@./bin/mocha \
-		--reporter dot \
-		test/acceptance/interfaces/bdd 2>&1 > /tmp/dot.out
+	@printf "==> [Test :: Non-TTY]\n"
+	$(MOCHA) --reporter dot \
+		test/acceptance/interfaces/bdd.spec 2>&1 > /tmp/dot.out
 
 	@echo dot:
 	@cat /tmp/dot.out
 
-	@./bin/mocha \
-		--reporter list \
-		test/acceptance/interfaces/bdd 2>&1 > /tmp/list.out
+	$(MOCHA) --reporter list \
+		test/acceptance/interfaces/bdd.spec 2>&1 > /tmp/list.out
 
 	@echo list:
 	@cat /tmp/list.out
 
-	@./bin/mocha \
-		--reporter spec \
-		test/acceptance/interfaces/bdd 2>&1 > /tmp/spec.out
+	$(MOCHA) --reporter spec \
+		test/acceptance/interfaces/bdd.spec 2>&1 > /tmp/spec.out
 
 	@echo spec:
 	@cat /tmp/spec.out
 
 tm:
-	@open editors/$(TM_BUNDLE)
+	@printf "==> [TM]\n"
+	open editors/$(TM_BUNDLE)
 
-.PHONY: test-cov test-jsapi test-compilers watch test test-all test-bdd test-tdd test-qunit test-exports test-unit test-integration non-tty tm clean
+.PHONY: test-jsapi test-compilers watch test test-node test-bdd test-tdd test-qunit test-exports test-unit test-integration non-tty tm clean test-browser test-browser-unit test-browser-bdd test-browser-qunit test-browser-tdd test-browser-exports lint test-only test-global-only

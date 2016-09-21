@@ -1,6 +1,7 @@
 var spawn = require('child_process').spawn;
 var path  = require('path');
 var fs = require('fs');
+var baseReporter = require('../../lib/reporters/base');
 
 module.exports = {
   /**
@@ -140,16 +141,22 @@ module.exports = {
 
     // Ignore empty lines before/after diff
     return diffs.map(function(diff) {
-      return diff.slice(1, -2).join('\n');
+      return diff.slice(1, -3).join('\n');
     });
-  }
+  },
+
+  /**
+   * regular expression used for splitting lines based on new line / dot symbol.
+   */
+  splitRegExp: new RegExp('[\\n' + baseReporter.symbols.dot + ']+')
 };
 
 function invokeMocha(args, fn) {
   var output, mocha, listener;
 
   output = '';
-  mocha = spawn('./bin/mocha', args);
+  args = [path.join('bin', 'mocha')].concat(args);
+  mocha = spawn(process.execPath, args);
 
   listener = function(data) {
     output += data;

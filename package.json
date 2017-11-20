@@ -302,17 +302,17 @@
     "test": "make test"
   },
   "dependencies": {
-    "browser-stdout": "1.3.0",
-    "commander": "2.9.0",
-    "debug": "2.2.0",
-    "diff": "1.4.0",
-    "escape-string-regexp": "1.0.5",
-    "glob": "7.0.5",
-    "growl": "1.9.2",
-    "json3": "3.3.2",
-    "lodash.create": "3.1.1",
-    "mkdirp": "0.5.1",
-    "supports-color": "3.1.2"
+    "browser-stdout": "^1.3.0",
+    "commander": "^2.9.0",
+    "debug": "^2.2.0",
+    "diff": "^1.4.0",
+    "escape-string-regexp": "^1.0.5",
+    "glob": "^7.0.5",
+    "growl": "^1.9.2",
+    "json3": "^3.3.2",
+    "lodash.create": "^3.1.1",
+    "mkdirp": "^0.5.1",
+    "supports-color": "^3.1.2"
   },
   "devDependencies": {
     "assert": "^1.4.1",
